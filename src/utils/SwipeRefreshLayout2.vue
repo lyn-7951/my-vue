@@ -1,40 +1,32 @@
 <template >
-<!--      <nav style="display: flex;  justify-content: space-evenly;padding-top: 10px;padding-bottom: 10px; ">-->
-<!--        <router-link   to="/home" >1</router-link>-->
-<!--        <router-link to="/home">2</router-link>-->
-<!--        <router-link to="/home">3</router-link>-->
-<!--        <router-link to="/home">4</router-link>-->
-<!--        &lt;!&ndash; 添加更多链接... &ndash;&gt;-->
-<!--      </nav>-->
-<!--      <router-view/>-->
-    <ToggleTabLyn
-        ref="changeStateRef"
-        style="background-color: white"
-        :statuses="pageStatuses"
-        :isHeader="true"
-        :currentPage = "currentPage"
-        :mType = "3"
-        :line-color="'pink'"
-        @status-change="selectPage"/>
+  <ToggleTabLyn
+      ref="changeStateRef"
+      style="background-color: white"
+      :statuses="pageStatuses"
+      :isHeader="true"
+      :currentPage = "currentPage"
+      :mType = "3"
+      :line-color="'pink'"
+      @status-change="selectPage"/>
 
-    <!--  内容-->
-    <div class="body">
-      <!--    搜索框-->
-      <div class="mInput" style="margin-bottom: 16px;width: 100%">
-        <input style="width:100%;border:none;font-size: 12px;padding: 0 5px"  type="text" placeholder="请输入" v-model="searchText"/>
-        <button style="border: none;width: 100px; height: 25px;padding: 5px 30px;font-size: 12px"  @click="search">搜索</button>
+  <!--  内容-->
+  <div class="body">
+    <!--    搜索框-->
+    <div class="mInput" style="margin-bottom: 16px;width: 100%">
+      <input style="width:100%;border:none;font-size: 12px;padding: 0 5px"  type="text" placeholder="请输入" v-model="searchText"/>
+      <button style="border: none;width: 100px; height: 25px;padding: 5px 30px;font-size: 12px"  @click="search">搜索</button>
+    </div>
+
+    <!--    滚动容器-->
+    <div  class="scroll-container" ref="scrollContainer" @scroll="saveScrollPosition">
+      <!--请求加载-->
+      <div v-if="showLoading"  class="load-container">
+        <div class="loader"></div>
       </div>
-
-      <!--    滚动容器-->
-      <div  class="scroll-container" ref="scrollContainer" @scroll="saveScrollPosition">
-       <!--请求加载-->
-        <div v-if="showLoading"  class="load-container">
-          <div class="loader"></div>
-        </div>
-        <div v-else>
+      <div v-else>
         <!--  1-->
-        <div v-show="currentPage === 0 && oneList.length >0" >
-          <div class="list-item" v-for="(item, index) in selectOneList" :key="index" @click="getInventoryInfo(item)">
+        <div v-show="currentPage === 0 && lists.oneList.data.length >0" >
+          <div class="list-item" v-for="(item, index) in lists.oneList.selected" :key="index" @click="getInfo(item)">
             <CustomerList>
               <template #title>
                 <span style="color: grey;font-size: 20px">{{ item.name }}</span>
@@ -52,7 +44,7 @@
               </template>
               <template #end>
                 <span style="line-height: 18px;color: grey;font-size: 12px;margin-right: 8px">{{
-                   getMTime(item.time)
+                    getMTime(item.time)
                   }}</span>
                 <span style="color: grey;font-size: 12px">结束</span>
               </template>
@@ -60,13 +52,13 @@
           </div>
         </div>
         <!-- 1无数据提示 -->
-        <div v-show="currentPage === 0 && oneList.length === 0">
+        <div v-show="currentPage === 0 && lists.oneList.data.length === 0">
           <NoData/>
         </div>
         <!-- 2-->
-        <div  v-show="currentPage === 1  && twoList.length >0">
+        <div  v-show="currentPage === 1  && lists.twoList.data.length >0">
           <!--    列表 -->
-          <div class="list-item"  v-for="(item, index) in selectTwoList" :key="index" @click="getInfo(item)">
+          <div class="list-item"  v-for="(item, index) in lists.twoList.selected" :key="index" @click="getInfo(item)">
             <CustomerList>
               <template #title>
                 <span style="color: grey;font-size: 20px">{{ item.name }}</span>
@@ -94,35 +86,41 @@
           </div>
         </div>
         <!-- 2无数据提示 -->
-        <div v-show="currentPage === 1 && twoList.length === 0">
-                  <no-data/>
-        </div>
+        <div v-show="currentPage === 1 && lists.twoList.data.length === 0">
+          <no-data/>
         </div>
       </div>
-
     </div>
+
+  </div>
 </template>
 
 <script setup>
-import ToggleTabLyn from '@/components/ToggleTabLyn.vue';
-import {onMounted, ref} from "vue";
+
+import ToggleTabLyn from '@/components/ToggleTabLyn';
+import {onActivated, onMounted, ref} from "vue";
 import useScrollPosition from "@/hooks/useScrollPosition";
-import CustomerList from "@/views/CustomerList.vue";
+import CustomerList from "@/views/CustomerList";
 import axios from "axios";
-import {format} from "date-fns";
+import {format} from "date-fns";//时间戳转字符串
 import NoData from "@/components/NoData";
+import router from "@/router";
 
 const pageStatuses = ref([
   '1',
   '2',
-  '3',
-  '4',
 ]);
 const currentPage = ref(0);
 
+const lists = ref({
+  oneList:{data:[],selected:[]},
+  twoList:{data:[],selected:[]},
+})
+let loadingTimer;
+
 //刷新 保存滚动条数据
 const scrollContainer = ref(null);
-const scrollPositions = ref([0, 0, 0, 0]); // 假设有四个页面
+const scrollPositions = ref([0, 0]); // 假设有四个页面
 const {  saveScrollPosition } = useScrollPosition( scrollContainer,scrollPositions, currentPage
     , () => {
       isShowLoading()
@@ -133,26 +131,15 @@ const {  saveScrollPosition } = useScrollPosition( scrollContainer,scrollPositio
         case 1:
           getCustomer2()
           break
-        case 2:
-          break
-        case 3:
-          break
       }
     });
 
 const searchText = ref('')
-const oneList = ref([])
-const selectOneList = ref([])
-const twoList = ref([])
-const selectTwoList = ref([])
-const thirdList = ref([])
-const selectThirdList = ref([])
-const fourList = ref([])
-const selectFourList = ref([])
 
 const showLoading = ref(false)
 
 const changeStateRef = ref(null)
+
 
 const selectPage = (newStatus) => {
   switch (newStatus){
@@ -173,68 +160,71 @@ const selectPage = (newStatus) => {
   }
 }
 const filterListBySearchText = (listRef, searchText) => {
-  return listRef.value.filter(item => item.name.includes(searchText.value));
+  return listRef.filter(item => item.name.includes(searchText.value));
 };
 const search = () => {
   switch (currentPage.value){
-    case 0://盘库
-      selectOneList.value = filterListBySearchText(oneList,searchText)
+    case 0://0
+      lists.value.oneList.selected = filterListBySearchText(lists.value.oneList.data,searchText)
       break
-    case 1:// 抽检
-      selectTwoList.value = filterListBySearchText(twoList,searchText)
-      break
-    case 2:// 确认
-      selectThirdList.value = filterListBySearchText(thirdList,searchText)
-      break
-    case 3:// 上账
-      selectFourList.value = filterListBySearchText(fourList,searchText)
+    case 1://1
+      lists.value.twoList.selected = filterListBySearchText(lists.value.twoList.data,searchText)
       break
   }
 
 }
 const getInfo = (item) => {
+  sessionStorage.setItem('page', JSON.stringify(currentPage.value));
+  router.push({
+    name:'Info',
+    query: {
+      item:JSON.stringify(item)
+    }
+
+  })
 }
-let timer
 
 const isShowLoading = () =>{
-  clearTimeout(timer)
+  clearTimeout(loadingTimer)
   showLoading.value = true
-  timer =  setTimeout(()=>{
+  loadingTimer =  setTimeout(()=>{
     showLoading.value = false
   },3000)
 }
-//获取1
-const getCustomer1 = async () => {
-  if(oneList.value.length === 0 ){
-      isShowLoading()
+
+const fetchData= async (url,list)=>{
+  if(list.data.length === 0){
+   isShowLoading()
   }
   try {
-    const res = await axios.get('/api/getCustomer1');
-    oneList.value = res.data
-    selectOneList.value = res.data
+    const res = await axios.get(url);
     console.log(res.data)
+    list.data = res.data;
+    list.selected = res.data;
   } catch (error) {
-    console.log(error);
+    console.log(error)
   }
 }
 
+//获取1
+const getCustomer1 = async () => {
+   await fetchData('/api/getCustomer1', lists.value.oneList)
+}
 //获取2
 const getCustomer2 = async () => {
-  if(twoList.value.length === 0 ){
-    isShowLoading()
-  }
-  try {
-    const res = await axios.get('/api/getCustomer2');
-    twoList.value = res.data
-    selectTwoList.value = res.data
-    console.log(res.data)
-  } catch (error) {
-    console.log(error);
-  }
+  await fetchData('/api/getCustomer2', lists.value.twoList)
 }
+
+//组件激活
+onActivated(() => {
+  scrollContainer.value.scrollTop = scrollPositions.value[currentPage.value]
+})
+
 onMounted(async () => {
   await getCustomer1()
-  // changeStateRef.value.handleClick(pageStatuses.value[1])
+  currentPage.value = sessionStorage.getItem('page')? JSON.parse(sessionStorage.getItem('page')) : 0
+  if(sessionStorage.getItem('page'))
+    changeStateRef.value.handleClick(pageStatuses.value[currentPage.value])
 })
 //时间
 const getMTime = (time) => {
@@ -244,14 +234,10 @@ const getMTime = (time) => {
 
 <style scoped>
 .load-container{
-display: flex;
+  display: flex;
   justify-content: center;
 }
 .loader {
-  /*position: absolute;*/
-  /*top: 20%;*/
-  /*left: 50%;*/
-  /*transform: translate(-50%, -50%);*/
   margin-top: 50px;
   border: 3px solid transparent;
   border-top: 3px solid #ffc0cb; /* 浅粉色 */
@@ -301,8 +287,11 @@ display: flex;
   overflow-y: auto;
   /* 设置一个高度，可以根据需要调整，例如占满剩余空间 */
   height: calc(100vh - 115px);
-  /*background-color: re;*/
 }
+::-webkit-scrollbar {
+  width: 0;  /* 滚动条宽度 */
+}
+
 .list-item {
   padding: 16px;
   background-color: white;
