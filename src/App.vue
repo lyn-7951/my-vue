@@ -17,18 +17,18 @@
 <!--  </ul>-->
 
 <!--  <div id="app">-->
-<!--    <router-view>-->
-<!--    </router-view>-->
+    <router-view v-slot="{ Component }">
+      <keep-alive :include="data2">
+        <component :is="Component" />
+      </keep-alive>
+    </router-view>
 <!--  </div>-->
 
-  <div id="app">
-    <router-view v-slot="{ Component,route }">
-      <keep-alive>
-        <component v-if="route.meta && route.meta.keepAlive" :is="Component"/>
-      </keep-alive>
-      <component v-if="!(route.meta.keepAlive)" :is="Component"/>
-    </router-view>
-  </div>
+<!--  <div id="app">-->
+<!--    <KeepAlive>-->
+<!--      <component :is="current"></component>-->
+<!--    </KeepAlive>-->
+<!--  </div>-->
   <!--    <nav>-->
 <!--      <router-link to="/">Home</router-link>-->
 <!--      <router-link to="/swipe-refresh">SwipeRefreshLayout</router-link> &lt;!&ndash; 新增关于页面链接 &ndash;&gt;-->
@@ -37,7 +37,15 @@
 <!--    <router-view/>-->
 
 </template>
+
 <style>
+
+::-webkit-scrollbar {
+  width: 0 !important;
+}
+::-webkit-scrollbar {
+  width: 0 !important;height: 0;
+}
 #app {
   min-height: 100vh;
   background-color: #f7f7f7;
@@ -65,7 +73,7 @@ a, .green {
 // import CardInfoLyn from '@/components/CardInfoLyn.vue';
 
 
-import {computed, onMounted, ref, watch} from "vue";
+import {computed, onMounted, provide, ref, watch} from "vue";
 import axios from "axios";
 // const textList = ref(
 //   [
@@ -147,4 +155,15 @@ const getStatus = (newStatus) => {
 //   }
 //
 // }
+const data2 = ref([])
+const save=(name)=> {
+  data2.value .push(name)
+}
+const del=(name)=> {
+  data2.value = data2.value.filter(item => item !== name);
+}
+provide( 'message', {
+  save,
+  del
+})
 </script>

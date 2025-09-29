@@ -19,6 +19,11 @@ import MyList2 from "@/xiala/MyList2";
 import TestImg from "@/views/TestImg";
 import MyTablePage from "@/mytable/MyTablePage";
 import MyTabsPage from "@/mytabs/MyTabsPage";
+import MyInput from "@/input/MyInput";
+import SecureCanvas from "@/components/SecureCanvas";
+import MiMa from "@/mima/MiMa";
+import MiMa2 from "../mima/MiMa2";
+import MyCheckBox from "../myCheckBox/MyCheckBox";
 
 /*
 * SwipeRefreshLayout2传给Info，Info 接收,之前说过
@@ -130,6 +135,31 @@ const routes = [
         path: '/my-tabs-page',
         name: 'MyTabsPage',
         component: MyTabsPage,
+    },
+    {
+        path: '/my-input',
+        name: 'MyInput',
+        component: MyInput,
+    },
+    {
+        path: '/secure-canvas',
+        name: 'SecureCanvas',
+        component: SecureCanvas,
+    },
+    {
+        path: '/mi-ma',
+        name: 'MiMa',
+        component: MiMa,
+    },
+    {
+        path: '/mi-ma2',
+        name: 'MiMa2',
+        component: MiMa2,
+    },
+    {
+        path: '/my-check-box',
+        name: 'MyCheckBox',
+        component: MyCheckBox,
     },
 ]
 
