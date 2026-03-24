@@ -1,0 +1,11 @@
+{    
+    // 这行必须要,有了才能开启git追朔注解
+    "gitlens.codeLens.enabled": true,
+    "gitlens.hovers.currentLine.enabled": false,
+    "gitlens.blame.format": "${date}${author}",
+    "gitlens.blame.compact": true,
+    "gitlens.blame.heatmap.enabled": false,
+     // ←←← 新增这两行（关键！）
+    "gitlens.defaultDateFormat": "YYYY/MM/DD",
+    "gitlens.defaultDateStyle": "absolute"
+}
